@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TicTacToe</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+
+        #app {
+            width: 120px;
+            margin: 100px auto 0;
+        }
+
+        .row {
+            box-sizing: border-box;
+            width: 120px;
+            height: 40px;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: nowrap;
+        }
+
+        .item {
+            box-sizing: border-box;
+            width: 40px;
+            height: 40px;
+            border: 1px solid #ccc;
+            position: relative;
+        }
+
+
+        .piece {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            left: 10px;
+            top: 10px;
+            text-align: center;
+            line-height: 20px;
+        }
+
+        #resetBtn {
+            display: block;
+            padding: 6px 20px;
+            margin: 0 auto 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app"></div>
+
+    <script>
+        const box = document.getElementById('app')
+        let items
+        let step = 0
+        let isOver = {}
+        // let checkerboard = Array.from(new Array(3), () => Array.from(new Array(3), () => 0))
+        // let checkerboard = [
+        //     ['x', 'o', 'x'],
+        //     ['o', 'o', 0],
+        //     ['o', 'x', 0]
+        // ]
+        let checkerboard = [
+            [0, 0, 0],
+            [0, 0, 0],
+            [0, 0, 0]
+        ]
+        // let checkerboard = [
+        //     ["x", 0, "o"],
+        //     ["o", "o", "x"],
+        //     ["x", 0, 0]
+        // ]
+        // let checkerboard = [
+        //     ["x", 'x', "o"],
+        //     ["o", "o", "x"],
+        //     ["x", "o", 0]
+        // ]
+        // 初始化棋盘
+        const initMap = () => {
+            var childs = box.childNodes;
+            for (var i = childs.length - 1; i >= 0; i--) {
+                box.removeChild(childs[i]);
+            }
+
+            const btn = document.createElement('button')
+            const txt = document.createTextNode('重置')
+            btn.id = 'resetBtn'
+            btn.appendChild(txt)
+            box.insertBefore(btn, box.firstChild)
+
+            for (let i = 0; i < 3; ++i) {
+                const row = document.createElement('div')
+                row.className = 'row'
+                row.setAttribute('i', i)
+                for (let j = 0; j < 3; ++j) {
+                    const item = document.createElement('div')
+                    item.className = 'item'
+                    item.setAttribute('i', i)
+                    item.setAttribute('j', j)
+                    if (checkerboard[i][j]) {
+                        const piece = document.createElement('div')
+                        piece.className = 'piece'
+                        const txt = document.createTextNode(checkerboard[i][j])
+                        piece.appendChild(txt)
+                        item.appendChild(piece)
+                    }
+                    row.appendChild(item)
+                }
+                box.appendChild(row)
+            }
+        }
+        // 渲染棋子
+        const drop = (i, j) => {
+            if (!checkerboard[i][j]) {
+                const plate = items[i * 3 + j]
+                const piece = document.createElement('div')
+                piece.className = 'piece'
+                const txt = document.createTextNode(step % 2 === 0 ? 'o' : 'x')
+                checkerboard[i][j] = step % 2 === 0 ? 'o' : 'x'
+                piece.appendChild(txt)
+                plate.appendChild(piece)
+                // console.log(checkerboard)
+                isOver = check(checkerboard)
+                // console.log(isOver)
+                if (isOver.state && !isOver.winner) {
+                    setTimeout(() => { alert('平局') }, 500)
+                    console.log("平局")
+                } else if (isOver.winner) {
+                    setTimeout(() => { alert("胜者：" + isOver.winner) }, 500)
+                    console.log("胜者：" + isOver.winner)
+                } else {
+                    step++
+                }
+            }
+
+        }
+        // 格式化返回数据
+        const normalize = (state = false, winner = '') => ({ state, winner })
+        // 判断下一步棋是否能赢
+
+        const willWin = (checkerboard, step) => {
+            for (let i = 0; i < 3; ++i) {
+                for (let j = 0; j < 3; ++j) {
+                    if (checkerboard[i][j]) {
+                        continue
+                    }
+                    let temp = JSON.parse(JSON.stringify(checkerboard))
+                    temp[i][j] = step % 2 === 0 ? 'o' : 'x'
+                    // console.log(temp)
+                    // console.log(temp, check(temp))
+                    // if (i === 1 && j === 2 && step === 7) {
+                    //     console.log(check(temp), step % 2 === 0 ? 'o' : 'x')
+                    // }
+                    let result = check(temp)
+                    // console.log(result)
+                    if (result.winner) {
+                        // console.log(i, j)
+                        return { i, j }
+                    }
+                }
+            }
+            return null
+        }
+        // 最佳策略
+        const bestChoice = (checkerboard, step) => {
+            let computerDrop = willWin(checkerboard, step)
+            if (computerDrop) {
+                return {
+                    result: 1,
+                    computerDrop
+                }
+            }
+            let result = -1
+            outer:
+            for (let i = 0; i < 3; ++i) {
+                for (let j = 0; j < 3; ++j) {
+                    if (checkerboard[i][j]) {
+                        continue
+                    }
+                    let temp = JSON.parse(JSON.stringify(checkerboard))
+                    temp[i][j] = step % 2 === 0 ? 'o' : 'x'
+                    let r = bestChoice(temp, step + 1)
+                    if (-r.result >= result) {
+                        // console.log(result, r)
+                        result = -r.result
+                        computerDrop = { i, j }
+                    }
+                    if (result === 1) {
+                        break outer
+                    }
+                }
+            }
+            return {
+                result: computerDrop ? result : 0,
+                computerDrop
+            }
+        }
+
+
+        // 检测游戏是否结束
+        const check = (checkerboard) => {
+            // debugger
+            let i, j, piece
+            // 横向
+            row:
+            for (i = 0; i < 3; ++i) {
+                piece = checkerboard[i][0]
+                for (j = 0; j < 3; ++j) {
+                    if (!checkerboard[i][j]) continue row
+                    if (piece !== checkerboard[i][j]) continue row
+                    if (j === 2) return normalize(true, piece)
+                }
+            }
+            // 纵向
+            col:
+            for (j = 0; j < 3; ++j) {
+                piece = checkerboard[0][j]
+                for (i = 0; i < 3; ++i) {
+                    if (!checkerboard[i][j]) continue col
+                    if (piece !== checkerboard[i][j]) continue col
+                    if (i === 2) return normalize(true, piece)
+                }
+            }
+            // 对角线
+            piece = checkerboard[0][0]
+            for (i = 0; i < 3; ++i) {
+                if (!checkerboard[i][i]) break
+                if (piece !== checkerboard[i][i]) break
+                if (i === 2) return normalize(true, piece)
+            }
+            // 反对脚线
+            piece = checkerboard[0][2]
+            for (i = 0; i < 3; ++i) {
+                j = 2 - i
+                if (!checkerboard[i][j]) break
+                if (piece !== checkerboard[i][j]) break
+                if (i === 2) return normalize(true, piece)
+            }
+            // 棋盘满了 平局
+            let arr = checkerboard.flat()
+            if (arr.every(v => v !== 0)) return normalize(true)
+
+            return normalize()
+        }
+
+
+        // console.log('willWin:::', willWin([["x", 0, "o"],
+        // ["o", "o", "x"],
+        // ["x", "o", "x"]], 8))
+        // console.log('willWin:::',
+        //     willWin([
+        //         ["x", 'x', "o"],
+        //         ["o", "o", "x"],
+        //         ["x", "o", 0]
+        //     ], 8))
+        // 重置游戏
+        const reset = () => {
+            step = 0
+            checkerboard = checkerboard = [
+                [0, 0, 0],
+                [0, 0, 0],
+                [0, 0, 0]
+            ]
+            isOver = {}
+            initMap()
+            initGame()
+        }
+        // 初始游戏
+        const initGame = () => {
+            const resetBtn = document.getElementById('resetBtn')
+            resetBtn.addEventListener('click', reset)
+            items = document.querySelectorAll('.item')
+            items.forEach(el => el.addEventListener('click', () => {
+                if (isOver.state) return
+                if (step >= 9) {
+                    return
+                }
+                const i = Number(el.getAttribute('i'))
+                const j = Number(el.getAttribute('j'))
+                drop(i, j)
+                const computer = bestChoice(checkerboard, step)
+                const pos = computer.computerDrop
+                // console.log('result::: ', computer.result,
+                //     'pos:::', pos,
+                // )
+                pos && drop(pos.i, pos.j)
+            }))
+        }
+
+        initMap()
+        initGame()
+
+    </script>
+</body>
+
+</html>

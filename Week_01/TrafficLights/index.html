@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TrafficLights</title>
+    <style>
+        #app {
+            width: 200px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 100px auto 0;
+        }
+
+        #app div {
+            width: 50px;
+            height: 50px;
+            background-color: #ddd;
+            border-radius: 50%;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <div class="red"></div>
+        <div class="green"></div>
+        <div class="yellow"></div>
+    </div>
+    <script>
+
+        const changeColor = (color, reset = false) => {
+            const el = document.querySelector('.' + color)
+            if (reset) el.style.backgroundColor = '#ddd'
+            else el.style.backgroundColor = color
+        }
+
+        // async/await版show
+        const show = async () => {
+            await new Promise((resolve) => {
+                setTimeout(() => {
+                    changeColor('green')
+                    resolve()
+                })
+            })
+            await new Promise((resolve) => {
+                setTimeout(() => {
+                    changeColor('green', true)
+                    changeColor('yellow')
+                    resolve()
+                }, 10000)
+            })
+            await new Promise((resolve) => {
+                setTimeout(() => {
+                    changeColor('yellow', true)
+                    changeColor('red')
+                    resolve()
+                }, 2000)
+            })
+            await new Promise((resolve) => {
+                setTimeout(() => {
+                    changeColor('red', true)
+                    resolve()
+                }, 5000)
+            })
+            await show()
+        }
+
+        // promise版show
+        // const show = () => new Promise((resolve) => {
+        //     setTimeout(() => {
+        //         changeColor('green')
+        //         resolve()
+        //     })
+        // }).then(() => new Promise((resolve) => {
+        //     setTimeout(() => {
+        //         changeColor('green', true)
+        //         changeColor('yellow')
+        //         resolve()
+        //     }, 10000)
+        // })).then(() => new Promise((resolve) => {
+        //     setTimeout(() => {
+        //         changeColor('yellow', true)
+        //         changeColor('red')
+        //         resolve()
+        //     }, 2000)
+        // })).then(() => new Promise((resolve) => {
+        //     setTimeout(() => {
+        //         changeColor('red', true)
+        //         resolve()
+        //     }, 5000)
+        // })).then(show)
+
+        // 嵌套版show
+        // const show = () => {
+        //     setTimeout(() => {
+        //         changeColor('green')
+
+        //         setTimeout(() => {
+        //             changeColor('green', true)
+        //             changeColor('yellow')
+
+        //             setTimeout(() => {
+        //                 changeColor('yellow', true)
+        //                 changeColor('red')
+
+        //                 setTimeout(() => {
+        //                     changeColor('red', true)
+        //                     show()
+        //                 }, 5000)
+        //             }, 2000)
+        //         }, 10000)
+        //     })
+        // }
+
+        show()
+    </script>
+</body>
+
+</html>

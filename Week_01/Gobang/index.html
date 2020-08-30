@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gobang</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+
+        #app {
+            /* width: 400px; */
+            margin: 100px auto 0;
+        }
+
+        .row {
+            box-sizing: border-box;
+            /* width: 400px; */
+            height: 40px;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: nowrap;
+        }
+
+        .item {
+            box-sizing: border-box;
+            width: 40px;
+            height: 40px;
+            border: 1px solid #ccc;
+            position: relative;
+        }
+
+        .piece {
+            box-sizing: border-box;
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            left: 10px;
+            top: 10px;
+            text-align: center;
+            line-height: 20px;
+            border-radius: 50%;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="app"></div>
+
+    <script>
+        const BOARD_FORMAT = 10
+        const box = document.getElementById('app')
+        let step = 0
+        let checkerboard = Array.from(new Array(BOARD_FORMAT), () => Array.from(new Array(BOARD_FORMAT), () => 0))
+
+        const initMap = () => {
+            // var childs = box.childNodes;
+            // for (var i = childs.length - 1; i >= 0; i--) {
+            //     box.removeChild(childs[i]);
+            // }
+            // btn.id = 'resetBtn'
+            // btn.appendChild(txt)
+            // box.insertBefore(btn, box.firstChild)
+            box.style.width = 40 * BOARD_FORMAT + 'px'
+            for (let i = 0; i < BOARD_FORMAT; ++i) {
+                const row = document.createElement('div')
+                row.className = 'row'
+                row.style.width = 40 * BOARD_FORMAT + 'px'
+                row.setAttribute('i', i)
+                for (let j = 0; j < BOARD_FORMAT; ++j) {
+                    const item = document.createElement('div')
+                    item.className = 'item'
+                    item.setAttribute('i', i)
+                    item.setAttribute('j', j)
+                    row.appendChild(item)
+                }
+                box.appendChild(row)
+            }
+        }
+
+        // 方向 
+        const sign = [[[0, -1], [0, 1]], [[-1, 0], [1, 0]], [[-1, -1], [1, 1]], [[-1, 1], [1, -1]]]
+        // 格式化返回数据
+        const normalize = (state = false, winner = '') => ({ state, winner })
+        // 检测游戏是否结束
+        const check = (x, y) => {
+            let i, j, k, number, handle;
+            const piece = checkerboard[x][y]
+            for (i = 0; i < 4; ++i) {
+                number = 1
+                for (let j = 0; j < 2; ++j) {
+                    handle = sign[i][j]
+                    for (k = 1; k < 5; ++k) {
+                        const tempX = x + k * handle[0]
+                        const tempY = y + k * handle[1]
+                        if (tempX < 0 || tempX >= BOARD_FORMAT || tempY < 0 || tempY >= BOARD_FORMAT) {
+                            break
+                        }
+                        if (checkerboard[x + k * handle[0]][y + k * handle[1]] !== piece) {
+                            break
+                        } else {
+                            number += 1
+                        }
+                        if (checkerboard.flat().every(v => v !== 0)) return normalize(true)
+                        else return normalize(false)
+                    }
+
+                    const initGame = () => {
+                        // const resetBtn = document.getElementById('resetBtn')
+                        let items = document.querySelectorAll('.item')
+                        let isOver = {}
+                        // resetBtn.addEventListener('click', reset)
+                        items.forEach(el => el.addEventListener('click', () => {
+                            if (isOver.state) return
+                            // if (step >= 9) {
+                            //     return
+                            // }
+                            const i = Number(el.getAttribute('i'))
+                            const j = Number(el.getAttribute('j'))
+                            console.log(i, j)
+                            const plate = items[i * BOARD_FORMAT + j]
+                            if (!checkerboard[i][j]) {
+                                const piece = document.createElement('div')
+                                piece.className = 'piece'
+                                piece.style.backgroundColor = step % 2 === 0 ? 'black' : '#ddd'
+                                checkerboard[i][j] = step % 2 === 0 ? 1 : 2 // 1黑 2白
+                                plate.appendChild(piece)
+                                isOver = check(i, j)
+                                console.log(isOver)
+                                if (isOver.state) {
+                                    console.log(isOver.winner ? "胜者：" + isOver.winner : "平局")
+                                } else {
+                                    step++
+                                }
+                            }
+                        }))
+                    }
+
+                    initMap()
+                    initGame()
+    </script>
+</body>
+
+</html>
