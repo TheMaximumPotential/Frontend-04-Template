@@ -105,43 +105,50 @@
                         } else {
                             number += 1
                         }
-                        if (checkerboard.flat().every(v => v !== 0)) return normalize(true)
-                        else return normalize(false)
                     }
+                }
+                if (number === 5) return normalize(true, piece === 1 ? '黑棋' : '白棋')
+            }
+            if (checkerboard.flat().every(v => v !== 0)) return normalize(true)
+            else return normalize(false)
+        }
 
-                    const initGame = () => {
-                        // const resetBtn = document.getElementById('resetBtn')
-                        let items = document.querySelectorAll('.item')
-                        let isOver = {}
-                        // resetBtn.addEventListener('click', reset)
-                        items.forEach(el => el.addEventListener('click', () => {
-                            if (isOver.state) return
-                            // if (step >= 9) {
-                            //     return
-                            // }
-                            const i = Number(el.getAttribute('i'))
-                            const j = Number(el.getAttribute('j'))
-                            console.log(i, j)
-                            const plate = items[i * BOARD_FORMAT + j]
-                            if (!checkerboard[i][j]) {
-                                const piece = document.createElement('div')
-                                piece.className = 'piece'
-                                piece.style.backgroundColor = step % 2 === 0 ? 'black' : '#ddd'
-                                checkerboard[i][j] = step % 2 === 0 ? 1 : 2 // 1黑 2白
-                                plate.appendChild(piece)
-                                isOver = check(i, j)
-                                console.log(isOver)
-                                if (isOver.state) {
-                                    console.log(isOver.winner ? "胜者：" + isOver.winner : "平局")
-                                } else {
-                                    step++
-                                }
-                            }
-                        }))
+        const initGame = () => {
+            // const resetBtn = document.getElementById('resetBtn')
+            let items = document.querySelectorAll('.item')
+            let isOver = {}
+            // resetBtn.addEventListener('click', reset)
+            items.forEach(el => el.addEventListener('click', () => {
+                if (isOver.state) return
+                // if (step >= 9) {
+                //     return
+                // }
+                const i = Number(el.getAttribute('i'))
+                const j = Number(el.getAttribute('j'))
+                console.log(i, j)
+                const plate = items[i * BOARD_FORMAT + j]
+                if (!checkerboard[i][j]) {
+                    const piece = document.createElement('div')
+                    piece.className = 'piece'
+                    piece.style.backgroundColor = step % 2 === 0 ? 'black' : '#ddd'
+                    checkerboard[i][j] = step % 2 === 0 ? 1 : 2 // 1黑 2白
+                    plate.appendChild(piece)
+                    isOver = check(i, j)
+                    console.log(isOver)
+                    if (isOver.state) {
+                        setTimeout(() => {
+                            alert(isOver.winner ? "胜者：" + isOver.winner : "平局")
+                        }, 500)
+                        // console.log(isOver.winner ? "胜者：" + isOver.winner : "平局")
+                    } else {
+                        step++
                     }
+                }
+            }))
+        }
 
-                    initMap()
-                    initGame()
+        initMap()
+        initGame()
     </script>
 </body>
 
