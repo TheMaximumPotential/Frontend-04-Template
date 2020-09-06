@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MapEditor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+
+        .row {
+            display: flex;
+            margin-bottom: 1px;
+        }
+
+        .spot {
+            width: 6px;
+            height: 6px;
+            background-color: #ddd;
+            margin-right: 1px;
+        }
+
+        .spot.light {
+            background-color: #ccc;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="app"></div>
+    <!-- <script src="./Heap.js"></script> -->
+    <script>
+        const specifications = 100
+        const app = document.getElementById('app')
+        const map = localStorage['map'] ? JSON.parse(localStorage['map']).map(v => v === 2 ? 0 : v) : new Array(specifications * specifications).fill(0)
+        let spots
+        class Heap {
+            // 默认小根堆
+            constructor(arr = [], fn = (a, b) => a < b) {
+                this.container = []
+                this.fn = fn
+                arr.length &&
+                    arr.forEach((v) => {
+                        this.insert(v)
+                    })
+            }
+
+            insert(data) {
+                const { container, fn, swap } = this
+                container.push(data)
+                let index = container.length - 1
+                while (index >= 0) {
+                    let parentIdx = Math.floor((index - 1) / 2)
+                    if (parentIdx < 0 || fn(container[parentIdx], container[index]))
+                        break
+                    swap(container, index, parentIdx)
+                    index = parentIdx
+                }
+            }
+
+            extract() {
+                const { container, fn, swap } = this
+                if (!container.length) {
+                    return null
+                }
+                let index = 0
+                swap(container, index, container.length - 1)
+                const result = container.pop()
+                const length = container.length
+                let exchange = index * 2 + 1
+
+                while (exchange < length) {
+                    // 如果有右节点，并且右节点的值大于左节点的值
+                    let right = index * 2 + 2
+                    if (right < length && fn(container[right], container[exchange])) {
+                        exchange = right
+                    }
+                    if (!fn(container[exchange], container[index])) {
+                        break
+                    }
+                    swap(container, exchange, index)
+                    index = exchange
+                    exchange = index * 2 + 1
+                }
+                return result
+            }
+
+            top() {
+                return this.container.length ? this.container[0] : null
+            }
+
+            swap(arr, i, j) {
+                return ([arr[i], arr[j]] = [arr[j], arr[i]])
+            }
+        }
+        const sleep = (t) => {
+            return new Promise((resolve) => {
+                setTimeout(resolve, t)
+            })
+        }
+        const initMap = () => {
+            const frag = document.createDocumentFragment()
+            for (let i = 0; i < specifications; ++i) {
+                const row = document.createElement('div')
+                row.className = 'row'
+                row.setAttribute('i', i)
+                for (let j = 0; j < specifications; ++j) {
+                    const box = document.createElement('div')
+                    box.className = 'spot'
+                    box.setAttribute('i', i)
+                    box.setAttribute('j', j)
+                    if (map[i * specifications + j] === 1) {
+                        box.classList.add('light')
+                    }
+                    if (map[i * specifications + j] === 2) {
+                        box.style.backgroundColor = 'skyblue'
+                    }
+                    row.appendChild(box)
+                }
+                frag.appendChild(row)
+            }
+            app.appendChild(frag)
+            spots = document.querySelectorAll('.spot')
+        }
+        const initDraw = () => {
+            let mouseDown = false
+            let buttonType = null
+            app.oncontextmenu = () => false
+            app.ondragstart = () => false
+            app.addEventListener('mousedown', (e) => {
+                mouseDown = true
+                buttonType = e.button
+            })
+            app.addEventListener('mousemove', (e) => {
+                const el = e.target
+                const classList = [...el.classList]
+                if (classList.includes('spot') && mouseDown) {
+                    const i = Number(el.getAttribute('i'))
+                    const j = Number(el.getAttribute('j'))
+                    if (buttonType === 0 && !classList.includes('light')) {
+                        el.classList.add('light')
+                        map[i * specifications + j] = 1
+                    }
+                    if (buttonType === 2 && classList.includes('light')) {
+                        e.target.classList.remove('light')
+                        map[i * specifications + j] = 0
+                    }
+                }
+            })
+            app.addEventListener('mouseup', () => {
+                mouseDown = false
+                buttonType = null
+                localStorage.setItem('map', JSON.stringify(map))
+            })
+        }
+        const findPath = async (map, start, end) => {
+            const distance = (pos) => (end[0] - pos[0]) ** 2 + (end[1] - pos[1]) ** 2
+            let queue = new Heap([start], (a, b) => distance(a) < distance(b))
+            let temp = Object.create(map)
+            const insert = async (x, y, pre) => {
+                if (x < 0 || x >= specifications || y < 0 || y >= specifications) return
+                if (temp[x * specifications + y]) return
+                await sleep(1)
+                spots[x * specifications + y].style.backgroundColor = 'skyblue'
+                temp[x * specifications + y] = pre
+                queue.insert([x, y])
+            }
+            while (queue.top() !== null) {
+                let [x, y] = queue.extract()
+                if (x === end[0] && y === end[1]) {
+                    let path = []
+                    while (x != start[0] || y != start[1]) {
+                        let idx = x * specifications + y
+                        path.push(temp[idx])
+                        await sleep(1);
+                        [x, y] = temp[idx]
+                        spots[idx].style.backgroundColor = 'purple'
+                    }
+                    return path
+                }
+                await insert(x, y + 1, [x, y])
+                await insert(x, y - 1, [x, y])
+                await insert(x - 1, y, [x, y])
+                await insert(x + 1, y, [x, y])
+                await insert(x - 1, y + 1, [x, y])
+                await insert(x + 1, y - 1, [x, y])
+                await insert(x - 1, y - 1, [x, y])
+                await insert(x + 1, y + 1, [x, y])
+            }
+            return false
+        }
+        initMap()
+        initDraw()
+    </script>
+</body>
+
+</html>
