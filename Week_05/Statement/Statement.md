@@ -1,0 +1,50 @@
+### Statement
+
+-   Grammar
+
+    -   简单语句
+        -   ExpressionStatement（核心）
+            -   表达式语句。
+        -   EmptyStatement
+            -   单独的一个分号。
+        -   DebuggerStatement
+            -   触发一个 debugger
+        -   ThrowStatement
+            -   抛出一个异常
+        -   ContinueStatement
+            -   跳过当前循环
+        -   BreakStatement
+            -   跳出当前循环
+        -   ReturnStatement
+            -   函数中返回值
+    -   复合语句
+        -   BlockStatement
+        -   IfStatement
+        -   SwitchStatement
+        -   IterationStatement
+        -   WithStatement
+        -   LabelledStatement
+        -   TryStatement
+    -   声明
+        -   FunctionDeclaration
+            -   function
+        -   GeneratorDeclaration
+        -   function\*
+        -   AsyncFunctionDeclaration
+            -   async function
+        -   AsyncGeneratorDeclaration
+            -   async function\*
+        -   VariableStatement
+            -   var
+        -   ClassDeclaration
+            -   class
+        -   LexicalDeclaration
+            -   let
+            -   const
+
+-   Runtime
+    -   Completion Record（完成记录）
+        -   [[type]]: normal, break, continue, return or throw
+        -   [[value]]: 基本类型
+        -   [[target]]: label
+    -   Lexical Environment
