@@ -1,8 +1,28 @@
-import React, { useEffect } from 'react'
+import React, { Children, useEffect } from 'react'
 import ReactDOM from 'react-dom'
 import G6 from '@antv/g6'
+import { idText } from 'typescript'
 
-const objects = {
+interface Node {
+	id: string
+	label?: string
+	children?: Array<Node>
+	type?: string
+	style?: {
+		[name: string]: string | number
+	}
+}
+
+interface Edge {
+	source: string
+	target: string
+	children?: Array<Edge>
+	style?: {
+		[name: string]: string | number
+	}
+}
+
+const objects: Node = {
 	id: 'Object',
 	children: [
 		{ id: 'Boolean' },
@@ -48,56 +68,7 @@ const objects = {
 	],
 }
 
-interface Node {
-	id: string
-	label?: string
-	children?: Array<Node>
-	type?: string
-	style?: {
-		[name: string]: string | number
-	}
-}
-
-function generateNodes(node: Node, nodes: Array<Node>) {
-	if (node.id) {
-		nodes.push({
-			id: node.id,
-			label: node.id,
-		})
-	}
-	if (node.children) {
-		for (let n of node.children) {
-			generateNodes(n, nodes)
-		}
-	}
-}
-
-interface Edge {
-	source: string
-	target: string
-	children?: Array<Edge>
-	style?: {
-		[name: string]: string | number
-	}
-}
-
-function generateEdges(node: Node, edges: Array<Edge>) {
-	if (!node.children) {
-		return
-	}
-	for (let n of node.children) {
-		edges.push({
-			source: node.id,
-			target: n.id,
-		})
-		generateEdges(n, edges)
-	}
-}
-
 const nodes: Array<Node> = []
-const edges: Array<Edge> = []
-generateNodes(objects, nodes)
-generateEdges(objects, edges)
 
 nodes.forEach((node: Node) => {
 	if (!node.style) {
@@ -109,57 +80,59 @@ nodes.forEach((node: Node) => {
 	node.type = 'circle'
 })
 
-edges.forEach((edge) => {
-	if (!edge.style) {
-		edge.style = {}
+const loop = (node: Node) => {
+	if (!node.label) {
+		node.label = node.id
 	}
-	edge.style.lineWidth = 1
-	edge.style.opacity = '#666'
-	edge.style.stroke = 'grey'
-})
-
-const data = {
-	nodes,
-	edges,
+	if (node.children) {
+		for (let obj of node.children) {
+			loop(obj)
+		}
+	}
+	return node
 }
+
+let node: Node = loop(objects)
+
+console.log(node)
 
 export default function () {
 	const ref = React.useRef(null)
-	let graph: { data: Function; render: Function } | null = null
+	let treeGraph: { data: Function; render: Function } | null = null
 
 	useEffect(() => {
-		if (!graph) {
-			graph = new G6.Graph({
+		if (!treeGraph) {
+			treeGraph = new G6.TreeGraph({
 				container: ReactDOM.findDOMNode(ref.current) as HTMLElement,
-				width: 1200,
-				height: 800,
+				width: window.innerWidth,
+				height: window.innerHeight,
+				fitView: true,
+				fitCenter: true,
 				modes: {
-					default: ['drag-canvas'],
+					default: [
+						{
+							type: 'collapse-expand',
+						},
+						'drag-canvas',
+						'zoom-canvas',
+					],
 				},
 				layout: {
-					type: 'dagre',
-					direction: 'LR',
+					type: 'dendrogram',
+					direction: 'LR', // H / V / LR / RL / TB / BT
+					nodeSep: 100,
+					rankSep: 200,
+					radial: true,
 				},
 				defaultNode: {
-					type: 'node',
-					labelCfg: {
-						style: {
-							fill: '#000000A6',
-							fontSize: 10,
-						},
-					},
-					style: {
-						stroke: '#72CC4A',
-						width: 150,
-					},
-				},
-				defaultEdge: {
-					type: 'polyline',
+					type: 'circle', // 节点类型
+					// ... 其他配置
+					size: 60,
 				},
 			})
 		}
-		graph.data(data)
-		graph.render()
+		treeGraph.data(node)
+		treeGraph.render()
 	}, [])
 
 	return <div ref={ref}></div>
