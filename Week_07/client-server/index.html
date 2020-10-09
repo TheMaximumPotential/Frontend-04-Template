@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>test</title>
+    <style>
+        /* #app .title,
+        #app .con {
+            display: flex;
+        } */
+
+        /* #app .con img {
+            width: 120px;
+        }
+
+        #app div #pic {
+            width: 100px;
+        }
+
+        #app p {
+            font-size: 20px;
+            color: skyblue;
+        } */
+
+        /* .title.first {
+            font-size: large;
+        }
+
+        p.title.first {
+            font-size: small;
+        } */
+
+
+        /* [0, 2, 1, 2] */
+        #app>div>img#pic:hover {
+            width: 100px;
+            height: 100px;
+        }
+
+        /* [0, 1, 1, 2] */
+        #app div>img:hover {
+            width: 100px;
+            height: 100px;
+        }
+
+        /* [0, 2, 0, 3] */
+        #app div img#pic::after {
+            width: 120px;
+            height: 120px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <p id="p" class="title first">hello world</p>
+        <div class="con">
+            <img id="pic" />
+            <img src="" alt="" />
+        </div>
+    </div>
+</body>
+
+</html>

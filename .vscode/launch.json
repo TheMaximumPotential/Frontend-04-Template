@@ -5,32 +5,10 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
-			"name": "Attach by Process ID",
-			"processId": "${command:PickProcess}",
-			"request": "attach",
-			"skipFiles": ["<node_internals>/**"],
-			"type": "pwa-node"
-		},
-		{
 			"type": "node",
 			"request": "launch",
-			"name": "Launch Program",
-			"program": "${workspaceFolder}/app.js",
-			"skipFiles": ["<node_internals>/**"]
-		},
-		{
-			"name": "Attach",
-			"port": 9229,
-			"request": "attach",
-			"skipFiles": ["<node_internals>/**"],
-			"type": "pwa-node"
-		},
-		{
-			"type": "pwa-chrome",
-			"request": "launch",
-			"name": "Launch Chrome against localhost",
-			"url": "http://localhost:8080",
-			"webRoot": "${workspaceFolder}"
+			"name": "debuger client.js",
+			"program": "${workspaceFolder}/Week_07/client-server/client.js"
 		}
 	]
 }
