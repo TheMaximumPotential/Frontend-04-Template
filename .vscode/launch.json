@@ -8,7 +8,7 @@
 			"type": "node",
 			"request": "launch",
 			"name": "debuger client.js",
-			"program": "${workspaceFolder}/Week_07/client-server/client.js"
+			"program": "${workspaceFolder}/Week_08/browser-fsm/client.js"
 		}
 	]
 }

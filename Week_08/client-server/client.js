@@ -217,6 +217,10 @@ void (async function () {
 	let response = await request.send()
 
 	let dom = parser.parserHTML(response.body)
-
 	console.log(dom)
+	let viewport = images(800, 600)
+
+	render(viewport, dom)
+
+	viewport.save('viewport.jpg')
 })()

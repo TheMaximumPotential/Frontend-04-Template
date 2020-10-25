@@ -6,70 +6,72 @@ const render = require('./render')
 // 解析的body里不能有中文，不然按照Content-Length解析会出问题
 class TrunkedBodyParser {
 	constructor() {
-		this.WAITING_LENGTH = 0
-		this.WAITING_LENGTH_END = 1
-		this.READING_TRUNK = 2
-		this.WAITING_NEW_LINE = 3
-		this.WAITING_NEW_LINE_END = 4
-
-		this.current = this.WAITING_LENGTH
+		this.state = this.waitingLength
 		this.length = 0
 		this.content = []
 		this.isFinished = false
 	}
-	receiveChar(char) {
-		if (this.current === this.WAITING_LENGTH) {
-			if (char === '\r') {
-				if (this.length === 0) {
-					this.isFinished = true
-					this.current = this.WAITING_NEW_LINE
-				} else {
-					this.current = this.WAITING_LENGTH_END
-				}
-			} else {
-				this.length *= 16
-				this.length += parseInt(char, 16)
-			}
-		} else if (this.current === this.WAITING_LENGTH_END) {
-			if (char === '\n') {
-				this.current = this.READING_TRUNK
-			}
-		} else if (this.current === this.READING_TRUNK) {
-			this.content.push(char)
-			this.length--
+
+	waitingLength(char) {
+		if (char === '\r') {
 			if (this.length === 0) {
-				this.current = this.WAITING_NEW_LINE
+				this.isFinished = true
+				return this.waitingNewLine
+			} else {
+				return this.waitingLengthEnd
 			}
-		} else if (this.current === this.WAITING_NEW_LINE) {
-			if (char === '\r') {
-				this.current = this.WAITING_NEW_LINE_END
-			}
-		} else if (this.current === this.WAITING_NEW_LINE_END) {
-			if (char === '\n') {
-				this.current = this.WAITING_LENGTH
-			}
+		} else {
+			this.length *= 16
+			this.length += parseInt(char, 16)
+			return this.waitingLength
 		}
+	}
+	waitingLengthEnd(char) {
+		if (char === '\n') {
+			return this.readingTrunk
+		} else {
+			return this.waitingLengthEnd
+		}
+	}
+	readingTrunk(char) {
+		this.content.push(char)
+		this.length--
+		if (this.length === 0) {
+			return this.waitingNewLine
+		} else {
+			return this.readingTrunk
+		}
+	}
+	waitingNewLine(char) {
+		if (char === '\r') {
+			return this.waitingNewLineEnd
+		} else {
+			return this.waitingNewLine
+		}
+	}
+	waitingNewLineEnd(char) {
+		if (char === '\n') {
+			return this.waitingLength
+		} else {
+			return this.waitingNewLineEnd
+		}
+	}
+
+	receiveChar(char) {
+		this.state = this.state(char)
 	}
 }
 
 class ResponseParser {
 	constructor() {
-		this.WAITING_STATUS_LINE = 0
-		this.WAITING_STATUS_LINE_END = 1
-		this.WAITING_HEADER_NAME = 2
-		this.WAITING_HEADER_SPACE = 3
-		this.WAITING_HEADER_VALUE = 4
-		this.WAITING_HEADER_LINE_END = 5
-		this.WAITING_HEADER_BLOCK_END = 6
-		this.WAITING_BODY = 7
-
-		this.current = this.WAITING_STATUS_LINE
+		this.state = this.waitingStatusLine
 		this.statusLine = ''
 		this.headers = {}
 		this.headerName = ''
 		this.headerValue = ''
 		this.bodyParser = null
 	}
+
 	get isFinished() {
 		return this.bodyParser && this.bodyParser.isFinished
 	}
@@ -88,51 +90,72 @@ class ResponseParser {
 		}
 	}
 	receiveChar(char) {
-		if (this.current === this.WAITING_STATUS_LINE) {
-			if (char === '\r') {
-				this.current = this.WAITING_STATUS_LINE_END
-			} else {
-				this.statusLine += char
-			}
-		} else if (this.current === this.WAITING_STATUS_LINE_END) {
-			if (char === '\n') {
-				this.current = this.WAITING_HEADER_NAME
-			}
-		} else if (this.current === this.WAITING_HEADER_NAME) {
-			if (char === ':') {
-				this.current = this.WAITING_HEADER_SPACE
-			} else if (char === '\r') {
-				this.current = this.WAITING_HEADER_BLOCK_END
-				if (this.headers['Transfer-Encoding'] === 'chunked') {
-					this.bodyParser = new TrunkedBodyParser()
-				}
-			} else {
-				this.headerName += char
-			}
-		} else if (this.current === this.WAITING_HEADER_SPACE) {
-			if (char === ' ') {
-				this.current = this.WAITING_HEADER_VALUE
-			}
-		} else if (this.current === this.WAITING_HEADER_VALUE) {
-			if (char === '\r') {
-				this.current = this.WAITING_HEADER_LINE_END
-				this.headers[this.headerName] = this.headerValue
-				this.headerName = ''
-				this.headerValue = ''
-			} else {
-				this.headerValue += char
-			}
-		} else if (this.current === this.WAITING_HEADER_LINE_END) {
-			if (char === '\n') {
-				this.current = this.WAITING_HEADER_NAME
-			}
-		} else if (this.current === this.WAITING_HEADER_BLOCK_END) {
-			if (char === '\n') {
-				this.current = this.WAITING_BODY
-			}
-		} else if (this.current === this.WAITING_BODY) {
-			this.bodyParser.receiveChar(char)
+		this.state = this.state(char)
+	}
+
+	waitingStatusLine(char) {
+		if (char === '\r') {
+			return this.waitingStatusLineEnd
+		} else {
+			this.statusLine += char
+			return this.waitingStatusLine
 		}
+	}
+	waitingStatusLineEnd(char) {
+		if (char === '\n') {
+			return this.waitingHeaderName
+		} else {
+			return this.waitingStatusLineEnd
+		}
+	}
+	waitingHeaderName(char) {
+		if (char === ':') {
+			return this.waitingHeaderSpace
+		} else if (char === '\r') {
+			if (this.headers['Transfer-Encoding'] === 'chunked') {
+				this.bodyParser = new TrunkedBodyParser()
+			}
+			return this.waitingHeaderBlockEnd
+		} else {
+			this.headerName += char
+			return this.waitingHeaderName
+		}
+	}
+	waitingHeaderSpace(char) {
+		if (char === ' ') {
+			return this.waitingHeaderValue
+		} else {
+			return this.waitingHeaderSpace
+		}
+	}
+	waitingHeaderValue(char) {
+		if (char === '\r') {
+			this.headers[this.headerName] = this.headerValue
+			this.headerName = ''
+			this.headerValue = ''
+			return this.waitingHeaderLineEnd
+		} else {
+			this.headerValue += char
+			return this.waitingHeaderValue
+		}
+	}
+	waitingHeaderLineEnd(char) {
+		if (char === '\n') {
+			return this.waitingHeaderName
+		} else {
+			return this.waitingHeaderBlockEnd
+		}
+	}
+	waitingHeaderBlockEnd(char) {
+		if (char === '\n') {
+			return this.waitingBody
+		} else {
+			return this.waitingHeaderBlockEnd
+		}
+	}
+	waitingBody(char) {
+		this.bodyParser.receiveChar(char)
+		return this.waitingBody
 	}
 }
 
@@ -216,7 +239,15 @@ void (async function () {
 
 	let response = await request.send()
 
+	// console.log(response.body)
+
 	let dom = parser.parserHTML(response.body)
 
-	console.log(dom)
+	// console.log(dom)
+
+	let viewport = images(800, 600)
+
+	render(viewport, dom)
+
+	viewport.save('viewport.jpg')
 })()
